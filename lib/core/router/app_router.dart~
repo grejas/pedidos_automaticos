@@ -1,0 +1,41 @@
+import 'package:flutter/material.dart';
+import '../../features/splash/splash_screen.dart';
+import '../../features/auth/screens/login_screen.dart';
+import '../../features/auth/screens/operator_home_screen.dart';
+import '../../features/admin/screens/admin_home_screen.dart';
+import '../../features/operators/screens/operators_screen.dart';
+
+class AppRouter {
+  static const String splash = '/';
+  static const String login = '/login';
+  static const String operatorHome = '/operator/home';
+  static const String adminHome = '/admin/home';
+  static const String operatorsManagement = '/admin/operators';
+
+  static Route<dynamic> onGenerateRoute(RouteSettings settings) {
+    switch (settings.name) {
+      case splash:
+        return _fade(const SplashScreen());
+      case login:
+        return _fade(const LoginScreen());
+      case operatorHome:
+        return _fade(const OperatorHomeScreen());
+      case adminHome:
+        return _fade(const AdminHomeScreen());
+      case operatorsManagement:
+        return _fade(const OperatorsScreen());
+      default:
+        return _fade(const LoginScreen());
+    }
+  }
+
+  static PageRoute _fade(Widget page) {
+    return PageRouteBuilder(
+      pageBuilder: (_, __, ___) => page,
+      transitionsBuilder: (_, animation, __, child) {
+        return FadeTransition(opacity: animation, child: child);
+      },
+      transitionDuration: const Duration(milliseconds: 300),
+    );
+  }
+}
