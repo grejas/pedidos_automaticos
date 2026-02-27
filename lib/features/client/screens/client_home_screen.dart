@@ -27,19 +27,17 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       final userId = supabase.auth.currentUser?.id;
       if (userId == null) return;
 
-      // Cargar datos del cliente
       final clientData = await supabase
           .from('clients')
-          .select('id, full_name, email, total_orders, total_spent_usd, reputation_score, reputation_tier')
+          .select('id, full_name, email, total_orders, total_spent_usd')
           .eq('app_user_id', userId)
           .maybeSingle();
 
-      // Cargar pedidos recientes si el cliente existe
       List<Map<String, dynamic>> orders = [];
       if (clientData != null) {
         final ordersData = await supabase
             .from('orders')
-            .select('id, created_at, status, total_price_usd')
+            .select('id, order_number, created_at, status, total_quote_usd')
             .eq('client_id', clientData['id'])
             .order('created_at', ascending: false)
             .limit(5);
@@ -77,18 +75,45 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
     );
     if (confirm == true) {
       await supabase.auth.signOut();
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, AppRouter.login);
-      }
+      if (mounted) Navigator.pushReplacementNamed(context, AppRouter.login);
+    }
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'RECEIVED': return AppTheme.secondary;
+      case 'ANALYZING': return AppTheme.warning;
+      case 'QUOTE_SENT': return const Color(0xFF8E44AD);
+      case 'CONFIRMED': return AppTheme.accent;
+      case 'DELIVERED': return AppTheme.accent;
+      case 'CANCELLED': return AppTheme.danger;
+      default: return AppTheme.textMid;
+    }
+  }
+
+  String _statusLabel(String status) {
+    switch (status) {
+      case 'RECEIVED': return 'Recibido';
+      case 'ANALYZING': return 'En revision';
+      case 'SEARCHING_PRICES': return 'Buscando precios';
+      case 'QUOTE_GENERATED': return 'Cotizacion lista';
+      case 'QUOTE_SENT': return 'Cotizacion enviada';
+      case 'AWAITING_CONFIRMATION': return 'Esperando confirmacion';
+      case 'CONFIRMED': return 'Confirmado';
+      case 'PAYMENT_PENDING': return 'Pago pendiente';
+      case 'PAYMENT_RECEIVED': return 'Pago recibido';
+      case 'PURCHASING': return 'Comprando';
+      case 'IN_TRANSIT': return 'En transito';
+      case 'DELIVERED': return 'Entregado';
+      case 'CANCELLED': return 'Cancelado';
+      default: return status;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final name = _client?['full_name'] ?? 'Cliente';
@@ -119,14 +144,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
               const SizedBox(height: 24),
               _buildQuickActions(),
               const SizedBox(height: 24),
-              const Text(
-                'Mis pedidos recientes',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textDark,
-                ),
-              ),
+              const Text('Mis pedidos recientes',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
               const SizedBox(height: 12),
               _recentOrders.isEmpty ? _buildEmptyOrders() : _buildOrdersList(),
             ],
@@ -154,34 +173,22 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
           Row(
             children: [
               Container(
-                width: 52,
-                height: 52,
+                width: 52, height: 52,
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(Icons.person_rounded,
-                    color: Colors.white, size: 28),
+                child: const Icon(Icons.person_rounded, color: Colors.white, size: 28),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Hola, $name',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      'Bienvenido a Father & Son',
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white.withOpacity(0.75)),
-                    ),
+                    Text('Hola, $name',
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                    Text('Bienvenido a Father & Son',
+                        style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.75))),
                   ],
                 ),
               ),
@@ -190,11 +197,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
           const SizedBox(height: 16),
           Row(
             children: [
-              _buildStatChip(Icons.shopping_bag_rounded,
-                  '$totalOrders pedidos'),
+              _statChip(Icons.shopping_bag_rounded, '$totalOrders pedidos'),
               const SizedBox(width: 12),
-              _buildStatChip(
-                  Icons.attach_money_rounded, '\$$totalSpent gastado'),
+              _statChip(Icons.attach_money_rounded, '\$$totalSpent gastado'),
             ],
           ),
         ],
@@ -202,7 +207,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
     );
   }
 
-  Widget _buildStatChip(IconData icon, String label) {
+  Widget _statChip(IconData icon, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -214,11 +219,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
         children: [
           Icon(icon, color: Colors.white, size: 14),
           const SizedBox(width: 6),
-          Text(label,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500)),
+          Text(label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -226,68 +227,58 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
 
   Widget _buildQuickActions() {
     final actions = [
-      {'label': 'Nuevo pedido', 'icon': Icons.add_shopping_cart_rounded, 'color': AppTheme.secondary},
-      {'label': 'Mis pedidos', 'icon': Icons.list_alt_rounded, 'color': AppTheme.accent},
-      {'label': 'Tracking', 'icon': Icons.local_shipping_rounded, 'color': const Color(0xFF8E44AD)},
-      {'label': 'Mi perfil', 'icon': Icons.person_rounded, 'color': AppTheme.warning},
+      {'label': 'Nuevo pedido', 'icon': Icons.add_shopping_cart_rounded, 'color': AppTheme.secondary, 'route': AppRouter.newOrder},
+      {'label': 'Mis pedidos', 'icon': Icons.list_alt_rounded, 'color': AppTheme.accent, 'route': ''},
+      {'label': 'Tracking', 'icon': Icons.local_shipping_rounded, 'color': const Color(0xFF8E44AD), 'route': ''},
+      {'label': 'Mi perfil', 'icon': Icons.person_rounded, 'color': AppTheme.warning, 'route': ''},
     ];
 
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-        childAspectRatio: 0.85,
+        crossAxisCount: 4, crossAxisSpacing: 10, mainAxisSpacing: 10, childAspectRatio: 0.85,
       ),
       itemCount: actions.length,
       itemBuilder: (context, index) {
         final action = actions[index];
+        final hasRoute = (action['route'] as String).isNotEmpty;
         return GestureDetector(
           onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('${action['label']} - proximamente'),
-                backgroundColor: AppTheme.primary,
-              ),
-            );
+            if (hasRoute) {
+              Navigator.pushNamed(context, action['route'] as String).then((result) {
+                if (result == true) _loadData();
+              });
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${action['label']} - proximamente'),
+                  backgroundColor: AppTheme.primary,
+                ),
+              );
+            }
           },
           child: Container(
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 42,
-                  height: 42,
+                  width: 42, height: 42,
                   decoration: BoxDecoration(
                     color: (action['color'] as Color).withOpacity(0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(action['icon'] as IconData,
-                      color: action['color'] as Color, size: 22),
+                  child: Icon(action['icon'] as IconData, color: action['color'] as Color, size: 22),
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  action['label'] as String,
-                  style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textDark),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                ),
+                Text(action['label'] as String,
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textDark),
+                    textAlign: TextAlign.center, maxLines: 2),
               ],
             ),
           ),
@@ -303,25 +294,16 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Column(
         children: [
           Icon(Icons.shopping_bag_outlined, size: 56, color: AppTheme.textLight),
           const SizedBox(height: 12),
           const Text('No tienes pedidos aun',
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textDark)),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textDark)),
           const SizedBox(height: 4),
-          const Text('Haz tu primer pedido',
+          const Text('Toca "Nuevo pedido" para empezar',
               style: TextStyle(fontSize: 13, color: AppTheme.textMid)),
         ],
       ),
@@ -331,59 +313,48 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
   Widget _buildOrdersList() {
     return Column(
       children: _recentOrders.map((order) {
+        final status = order['status'] ?? 'RECEIVED';
         return Container(
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
           ),
           child: Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 44, height: 44,
                 decoration: BoxDecoration(
-                  color: AppTheme.secondary.withOpacity(0.1),
+                  color: _statusColor(status).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.shopping_bag_rounded,
-                    color: AppTheme.secondary, size: 22),
+                child: Icon(Icons.shopping_bag_rounded, color: _statusColor(status), size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Pedido #${order['id'].toString().substring(0, 8)}',
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          color: AppTheme.textDark),
-                    ),
-                    Text(
-                      order['status'] ?? 'En proceso',
-                      style: const TextStyle(
-                          fontSize: 12, color: AppTheme.textMid),
+                    Text(order['order_number'] ?? 'Pedido',
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppTheme.textDark)),
+                    const SizedBox(height: 2),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: _statusColor(status).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(_statusLabel(status),
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _statusColor(status))),
                     ),
                   ],
                 ),
               ),
-              Text(
-                '\$${order['total_price_usd'] ?? '0.00'}',
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: AppTheme.textDark),
-              ),
+              if (order['total_quote_usd'] != null)
+                Text('\$${order['total_quote_usd']}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textDark)),
             ],
           ),
         );

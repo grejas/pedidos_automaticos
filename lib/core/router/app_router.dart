@@ -6,7 +6,9 @@ import '../../features/admin/screens/admin_home_screen.dart';
 import '../../features/operators/screens/operators_screen.dart';
 import '../../features/client/screens/register_screen.dart';
 import '../../features/client/screens/client_home_screen.dart';
+import '../../features/client/screens/new_order_screen.dart';
 import '../../features/auth/screens/forgot_password_screen.dart';
+import '../../features/orders/screens/orders_screen.dart';
 
 class AppRouter {
   static const String splash = '/';
@@ -17,6 +19,9 @@ class AppRouter {
   static const String adminHome = '/admin/home';
   static const String operatorsManagement = '/admin/operators';
   static const String clientHome = '/client/home';
+  static const String newOrder = '/client/new-order';
+  static const String orders = '/orders';
+  static const String adminOrders = '/admin/orders';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -36,6 +41,12 @@ class AppRouter {
         return _fade(const OperatorsScreen());
       case clientHome:
         return _fade(const ClientHomeScreen());
+      case newOrder:
+        return _fade(const NewOrderScreen());
+      case orders:
+        return _fade(const OrdersScreen(isAdmin: false));
+      case adminOrders:
+        return _fade(const OrdersScreen(isAdmin: true));
       default:
         return _fade(const LoginScreen());
     }

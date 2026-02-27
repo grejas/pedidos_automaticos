@@ -229,11 +229,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   Widget _buildModulesGrid() {
     final modules = [
       {'label': 'Operadores', 'icon': Icons.manage_accounts_rounded, 'color': AppTheme.primary, 'route': AppRouter.operatorsManagement, 'available': true},
-      {'label': 'Pedidos', 'icon': Icons.shopping_bag_rounded, 'color': AppTheme.secondary, 'route': '', 'available': false},
-      {'label': 'Clientes', 'icon': Icons.people_rounded, 'color': AppTheme.accent, 'route': '', 'available': false},
-      {'label': 'Cotizaciones', 'icon': Icons.calculate_rounded, 'color': AppTheme.warning, 'route': '', 'available': false},
-      {'label': 'Reportes', 'icon': Icons.bar_chart_rounded, 'color': const Color(0xFF8E44AD), 'route': '', 'available': false},
-      {'label': 'Configuracion', 'icon': Icons.settings_rounded, 'color': AppTheme.textMid, 'route': '', 'available': false},
+      {'label': 'Pedidos', 'icon': Icons.shopping_bag_rounded, 'color': AppTheme.secondary, 'route': AppRouter.adminOrders, 'available': true},
+      {'label': 'Clientes', 'icon': Icons.people_rounded, 'color': AppTheme.accent, 'route': AppRouter.adminOrders, 'available': true},
+      {'label': 'Cotizaciones', 'icon': Icons.calculate_rounded, 'color': AppTheme.warning, 'route': AppRouter.adminOrders, 'available': true},
+      {'label': 'Reportes', 'icon': Icons.bar_chart_rounded, 'color': const Color(0xFF8E44AD), 'route': AppRouter.adminOrders, 'available': true},
+      {'label': 'Configuracion', 'icon': Icons.settings_rounded, 'color': AppTheme.textMid, 'route': AppRouter.adminOrders, 'available': true},
     ];
 
     return GridView.builder(
@@ -282,3 +282,4 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 }
+
