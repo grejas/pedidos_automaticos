@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/constants/supabase_constants.dart';
+import '../../../core/utils/validators.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -140,7 +141,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               hintText: 'Ej: Juan Perez',
               prefixIcon: Icon(Icons.person_outline, color: AppTheme.textMid),
             ),
-            validator: (v) => v == null || v.trim().isEmpty ? 'Ingresa tu nombre' : null,
+            validator: Validators.name,
           ),
           const SizedBox(height: 16),
 
@@ -152,11 +153,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               hintText: 'tu@correo.com',
               prefixIcon: Icon(Icons.email_outlined, color: AppTheme.textMid),
             ),
-            validator: (v) {
-              if (v == null || v.trim().isEmpty) return 'Ingresa tu correo';
-              if (!v.contains('@')) return 'Correo invalido';
-              return null;
-            },
+            validator: Validators.email,
           ),
           const SizedBox(height: 16),
 
@@ -165,9 +162,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
             keyboardType: TextInputType.phone,
             decoration: const InputDecoration(
               labelText: 'Telefono (opcional)',
-              hintText: '+591 70000000',
+              hintText: '70000000',
               prefixIcon: Icon(Icons.phone_outlined, color: AppTheme.textMid),
             ),
+            validator: Validators.phone,
           ),
           const SizedBox(height: 16),
 
@@ -183,11 +181,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
               ),
             ),
-            validator: (v) {
-              if (v == null || v.isEmpty) return 'Ingresa una contrasena';
-              if (v.length < 6) return 'Minimo 6 caracteres';
-              return null;
-            },
+            validator: Validators.password,
           ),
           const SizedBox(height: 16),
 
@@ -203,11 +197,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
               ),
             ),
-            validator: (v) {
-              if (v == null || v.isEmpty) return 'Confirma tu contrasena';
-              if (v != _passwordController.text) return 'Las contrasenas no coinciden';
-              return null;
-            },
+            validator: (v) => Validators.confirmPassword(v, _passwordController.text),
           ),
           const SizedBox(height: 24),
 

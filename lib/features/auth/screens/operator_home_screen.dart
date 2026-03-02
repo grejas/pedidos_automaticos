@@ -4,6 +4,8 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/constants/supabase_constants.dart';
 
+final supabase = Supabase.instance.client;
+
 class OperatorHomeScreen extends StatefulWidget {
   const OperatorHomeScreen({super.key});
 
@@ -252,3 +254,4 @@ class _OperatorHomeScreenState extends State<OperatorHomeScreen> {
     );
   }
 }
+

@@ -4,6 +4,8 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/constants/supabase_constants.dart';
 
+final supabase = Supabase.instance.client;
+
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
 
@@ -282,4 +284,5 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 }
+
 

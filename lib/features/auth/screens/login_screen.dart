@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/constants/supabase_constants.dart';
+import '../../../core/utils/validators.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -39,10 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
       if (response.user == null) {
-        setState(() {
-          _errorMessage = 'No se pudo iniciar sesion. Verifica tus datos.';
-          _isLoading = false;
-        });
+        setState(() { _errorMessage = 'No se pudo iniciar sesion. Verifica tus datos.'; _isLoading = false; });
         return;
       }
 
@@ -57,10 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (operator != null) {
         if (operator['is_active'] == false) {
           await supabase.auth.signOut();
-          setState(() {
-            _errorMessage = 'Tu cuenta esta desactivada. Contacta al administrador.';
-            _isLoading = false;
-          });
+          setState(() { _errorMessage = 'Tu cuenta esta desactivada. Contacta al administrador.'; _isLoading = false; });
           return;
         }
         final role = operator['role'] as String;
@@ -83,10 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (client != null) {
         if (client['is_blocked'] == true) {
           await supabase.auth.signOut();
-          setState(() {
-            _errorMessage = 'Tu cuenta ha sido bloqueada. Contacta al soporte.';
-            _isLoading = false;
-          });
+          setState(() { _errorMessage = 'Tu cuenta ha sido bloqueada. Contacta al soporte.'; _isLoading = false; });
           return;
         }
         Navigator.pushReplacementNamed(context, AppRouter.clientHome);
@@ -94,32 +86,19 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       await supabase.auth.signOut();
-      setState(() {
-        _errorMessage = 'No se encontro un perfil asociado a este correo.';
-        _isLoading = false;
-      });
+      setState(() { _errorMessage = 'No se encontro un perfil asociado a este correo.'; _isLoading = false; });
 
     } on AuthException catch (e) {
-      setState(() {
-        _errorMessage = _translateAuthError(e.message);
-        _isLoading = false;
-      });
+      setState(() { _errorMessage = _translateAuthError(e.message); _isLoading = false; });
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Error de conexion. Verifica tu internet e intenta de nuevo.';
-        _isLoading = false;
-      });
+      setState(() { _errorMessage = 'Error de conexion. Verifica tu internet e intenta de nuevo.'; _isLoading = false; });
     }
   }
 
   String _translateAuthError(String message) {
-    if (message.contains('Invalid login credentials')) {
-      return 'Email o contrasena incorrectos.';
-    } else if (message.contains('Email not confirmed')) {
-      return 'Debes confirmar tu email antes de iniciar sesion.';
-    } else if (message.contains('Too many requests')) {
-      return 'Demasiados intentos. Espera unos minutos.';
-    }
+    if (message.contains('Invalid login credentials')) return 'Email o contrasena incorrectos.';
+    if (message.contains('Email not confirmed')) return 'Debes confirmar tu email antes de iniciar sesion.';
+    if (message.contains('Too many requests')) return 'Demasiados intentos. Espera unos minutos.';
     return 'Error al iniciar sesion. Intenta de nuevo.';
   }
 
@@ -132,10 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             children: [
               _buildHeader(),
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: _buildForm(),
-              ),
+              Padding(padding: const EdgeInsets.all(24), child: _buildForm()),
             ],
           ),
         ),
@@ -158,18 +134,14 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           Container(
             width: 80, height: 80,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(22),
-            ),
+            decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(22)),
             child: const Icon(Icons.local_shipping_rounded, size: 44, color: Colors.white),
           ),
           const SizedBox(height: 16),
           const Text('Father & Son',
               style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1)),
           const SizedBox(height: 4),
-          Text('Panel Operativo',
-              style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.7))),
+          Text('Sistema de Pedidos', style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.7))),
         ],
       ),
     );
@@ -199,11 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
               hintText: 'tu@correo.com',
               prefixIcon: Icon(Icons.email_outlined, color: AppTheme.textMid),
             ),
-            validator: (v) {
-              if (v == null || v.trim().isEmpty) return 'Ingresa tu correo';
-              if (!v.contains('@')) return 'Correo invalido';
-              return null;
-            },
+            validator: Validators.email,
           ),
           const SizedBox(height: 16),
 
@@ -216,34 +184,20 @@ class _LoginScreenState extends State<LoginScreen> {
               labelText: 'Contrasena',
               prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.textMid),
               suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                  color: AppTheme.textMid,
-                ),
+                icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: AppTheme.textMid),
                 onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
               ),
             ),
-            validator: (v) {
-              if (v == null || v.isEmpty) return 'Ingresa tu contrasena';
-              if (v.length < 6) return 'Minimo 6 caracteres';
-              return null;
-            },
+            validator: Validators.password,
           ),
           const SizedBox(height: 8),
 
-          // Olvidaste tu contrasena
           Align(
             alignment: Alignment.centerRight,
             child: GestureDetector(
               onTap: () => Navigator.pushNamed(context, AppRouter.forgotPassword),
-              child: const Text(
-                'Olvidaste tu contrasena?',
-                style: TextStyle(
-                  color: AppTheme.secondary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              child: const Text('Olvidaste tu contrasena?',
+                  style: TextStyle(color: AppTheme.secondary, fontSize: 13, fontWeight: FontWeight.w500)),
             ),
           ),
           const SizedBox(height: 24),
@@ -260,8 +214,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   const Icon(Icons.error_outline, color: AppTheme.danger, size: 20),
                   const SizedBox(width: 10),
-                  Expanded(child: Text(_errorMessage!,
-                      style: const TextStyle(color: AppTheme.danger, fontSize: 13))),
+                  Expanded(child: Text(_errorMessage!, style: const TextStyle(color: AppTheme.danger, fontSize: 13))),
                 ],
               ),
             ),
@@ -271,8 +224,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ElevatedButton(
             onPressed: _isLoading ? null : _login,
             child: _isLoading
-                ? const SizedBox(height: 22, width: 22,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                ? const SizedBox(height: 22, width: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
                 : const Text('Ingresar'),
           ),
           const SizedBox(height: 16),
@@ -280,24 +232,16 @@ class _LoginScreenState extends State<LoginScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text('No tienes cuenta? ',
-                  style: TextStyle(color: AppTheme.textMid, fontSize: 14)),
+              const Text('No tienes cuenta? ', style: TextStyle(color: AppTheme.textMid, fontSize: 14)),
               GestureDetector(
                 onTap: () => Navigator.pushNamed(context, AppRouter.register),
                 child: const Text('Registrate',
-                    style: TextStyle(
-                      color: AppTheme.secondary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    )),
+                    style: TextStyle(color: AppTheme.secondary, fontSize: 14, fontWeight: FontWeight.w600)),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          Center(
-            child: Text('Father & Son v1.0',
-                style: TextStyle(fontSize: 11, color: AppTheme.textLight)),
-          ),
+          Center(child: Text('Father & Son v1.0', style: TextStyle(fontSize: 11, color: AppTheme.textLight))),
         ],
       ),
     );

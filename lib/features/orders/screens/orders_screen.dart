@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/supabase_constants.dart';
+import '../../../core/constants/supabase_constants.dart';
+import 'quote_order_screen.dart';
+
+final supabase = Supabase.instance.client;
 
 class OrdersScreen extends StatefulWidget {
   final bool isAdmin;
@@ -497,10 +501,38 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             const SizedBox(height: 16),
             _buildInfoCard(order),
             const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _showStatusPicker,
-              icon: const Icon(Icons.edit_rounded, size: 18),
-              label: const Text('Cambiar Estado'),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _showStatusPicker,
+                    icon: const Icon(Icons.edit_rounded, size: 18),
+                    label: const Text('Cambiar Estado'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => QuoteOrderScreen(
+                            order: widget.order,
+                            onUpdated: () {
+                              widget.onUpdated();
+                              Navigator.pop(context);
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.calculate_rounded, size: 18),
+                    label: const Text('Cotizar'),
+                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.secondary),
+                  ),
+                ),
+              ],
             ),
             if (order['client_notes'] != null) ...[
               const SizedBox(height: 16),
@@ -711,3 +743,4 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 }
+

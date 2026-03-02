@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/supabase_constants.dart';
 
+final supabase = Supabase.instance.client;
+
 class NewOrderScreen extends StatefulWidget {
   const NewOrderScreen({super.key});
 
@@ -350,3 +352,4 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
     );
   }
 }
+

@@ -9,6 +9,7 @@ import '../../features/client/screens/client_home_screen.dart';
 import '../../features/client/screens/new_order_screen.dart';
 import '../../features/auth/screens/forgot_password_screen.dart';
 import '../../features/orders/screens/orders_screen.dart';
+import '../../features/orders/screens/quote_order_screen.dart';
 
 class AppRouter {
   static const String splash = '/';
@@ -62,3 +63,4 @@ class AppRouter {
     );
   }
 }
+

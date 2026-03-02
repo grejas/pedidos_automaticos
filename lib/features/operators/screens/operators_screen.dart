@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/supabase_constants.dart';
+import '../../../core/utils/validators.dart';
 
 class OperatorsScreen extends StatefulWidget {
   const OperatorsScreen({super.key});
@@ -45,14 +46,11 @@ class _OperatorsScreenState extends State<OperatorsScreen> {
     final userId = operator['user_id'] as String;
 
     try {
-      print("Toggling user: $userId to $newStatus");
-      // 1. Actualizar en tabla operators
       await supabase
           .from('operators')
           .update({'is_active': newStatus})
           .eq('id', operator['id']);
 
-      // 2. Bloquear/desbloquear en Supabase Auth usando service role
       final adminClient = SupabaseClient(
         SupabaseConstants.url,
         SupabaseConstants.serviceRoleKey,
@@ -114,8 +112,7 @@ class _OperatorsScreenState extends State<OperatorsScreen> {
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
                     itemCount: _operators.length,
-                    itemBuilder: (context, index) =>
-                        _buildOperatorCard(_operators[index]),
+                    itemBuilder: (context, index) => _buildOperatorCard(_operators[index]),
                   ),
                 ),
     );
@@ -238,18 +235,10 @@ class _OperatorsScreenState extends State<OperatorsScreen> {
             ? 'Desactivar a ${operator['full_name']} le impedira iniciar sesion. Continuar?'
             : 'Activar a ${operator['full_name']} le permitira iniciar sesion nuevamente. Continuar?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _toggleActive(operator);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isActive ? AppTheme.danger : AppTheme.accent,
-            ),
+            onPressed: () { Navigator.pop(ctx); _toggleActive(operator); },
+            style: ElevatedButton.styleFrom(backgroundColor: isActive ? AppTheme.danger : AppTheme.accent),
             child: Text(isActive ? 'Desactivar' : 'Activar'),
           ),
         ],
@@ -269,6 +258,7 @@ class _CreateOperatorScreenState extends State<CreateOperatorScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   String _selectedRole = 'operator';
   bool _isLoading = false;
@@ -279,6 +269,7 @@ class _CreateOperatorScreenState extends State<CreateOperatorScreen> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -306,6 +297,7 @@ class _CreateOperatorScreenState extends State<CreateOperatorScreen> {
         'user_id': response.user!.id,
         'full_name': _nameController.text.trim(),
         'email': _emailController.text.trim(),
+        'phone_number': _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
         'role': _selectedRole,
         'is_active': true,
         'current_load': 0,
@@ -346,7 +338,7 @@ class _CreateOperatorScreenState extends State<CreateOperatorScreen> {
                   hintText: 'Ej: Juan Perez',
                   prefixIcon: Icon(Icons.person_outline, color: AppTheme.textMid),
                 ),
-                validator: (v) => v == null || v.trim().isEmpty ? 'Ingresa el nombre' : null,
+                validator: Validators.name,
               ),
               const SizedBox(height: 20),
               _label('Correo electronico'),
@@ -358,11 +350,19 @@ class _CreateOperatorScreenState extends State<CreateOperatorScreen> {
                   hintText: 'correo@empresa.com',
                   prefixIcon: Icon(Icons.email_outlined, color: AppTheme.textMid),
                 ),
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) return 'Ingresa el correo';
-                  if (!v.contains('@')) return 'Correo invalido';
-                  return null;
-                },
+                validator: Validators.email,
+              ),
+              const SizedBox(height: 20),
+              _label('Telefono (opcional)'),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  hintText: '70000000',
+                  prefixIcon: Icon(Icons.phone_outlined, color: AppTheme.textMid),
+                ),
+                validator: Validators.phone,
               ),
               const SizedBox(height: 20),
               _label('Contrasena'),
@@ -378,11 +378,7 @@ class _CreateOperatorScreenState extends State<CreateOperatorScreen> {
                     onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                   ),
                 ),
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Ingresa una contrasena';
-                  if (v.length < 6) return 'Minimo 6 caracteres';
-                  return null;
-                },
+                validator: Validators.password,
               ),
               const SizedBox(height: 20),
               _label('Rol'),
@@ -451,7 +447,8 @@ class _CreateOperatorScreenState extends State<CreateOperatorScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: TextStyle(fontWeight: FontWeight.w600, color: selected ? AppTheme.primary : AppTheme.textDark)),
+                  Text(title, style: TextStyle(fontWeight: FontWeight.w600,
+                      color: selected ? AppTheme.primary : AppTheme.textDark)),
                   Text(subtitle, style: const TextStyle(fontSize: 12, color: AppTheme.textMid)),
                 ],
               ),
@@ -463,4 +460,3 @@ class _CreateOperatorScreenState extends State<CreateOperatorScreen> {
     );
   }
 }
-

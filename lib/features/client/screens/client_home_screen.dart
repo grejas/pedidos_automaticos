@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/constants/supabase_constants.dart';
+import 'client_order_detail_screen.dart';
 
 class ClientHomeScreen extends StatefulWidget {
   const ClientHomeScreen({super.key});
@@ -37,10 +38,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       if (clientData != null) {
         final ordersData = await supabase
             .from('orders')
-            .select('id, order_number, created_at, status, total_quote_usd')
+            .select('id, order_number, created_at, status, total_quote_usd, original_input, original_input_type, quantity, client_notes, product_price_usd, shipping_cost_usd, customs_cost_usd, service_fee_usd, discount_usd, estimated_delivery_date, rejection_reason, product_source_platform')
             .eq('client_id', clientData['id'])
             .order('created_at', ascending: false)
-            .limit(5);
+            .limit(10);
         orders = List<Map<String, dynamic>>.from(ordersData);
       }
 
@@ -61,10 +62,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
         title: const Text('Cerrar sesion'),
         content: const Text('Estas seguro que quieres salir?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
@@ -87,6 +85,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       case 'CONFIRMED': return AppTheme.accent;
       case 'DELIVERED': return AppTheme.accent;
       case 'CANCELLED': return AppTheme.danger;
+      case 'REJECTED_AUTO': return AppTheme.danger;
       default: return AppTheme.textMid;
     }
   }
@@ -106,6 +105,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       case 'IN_TRANSIT': return 'En transito';
       case 'DELIVERED': return 'Entregado';
       case 'CANCELLED': return 'Cancelado';
+      case 'REJECTED_AUTO': return 'Rechazado';
       default: return status;
     }
   }
@@ -314,48 +314,74 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
     return Column(
       children: _recentOrders.map((order) {
         final status = order['status'] ?? 'RECEIVED';
-        return Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 44, height: 44,
-                decoration: BoxDecoration(
-                  color: _statusColor(status).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+        final isQuoteSent = status == 'QUOTE_SENT';
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ClientOrderDetailScreen(
+                  order: order,
+                  onUpdated: _loadData,
                 ),
-                child: Icon(Icons.shopping_bag_rounded, color: _statusColor(status), size: 22),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(order['order_number'] ?? 'Pedido',
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppTheme.textDark)),
-                    const SizedBox(height: 2),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: _statusColor(status).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
+            );
+          },
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: isQuoteSent ? Border.all(color: const Color(0xFF8E44AD), width: 1.5) : null,
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44, height: 44,
+                  decoration: BoxDecoration(
+                    color: _statusColor(status).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.shopping_bag_rounded, color: _statusColor(status), size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(order['order_number'] ?? 'Pedido',
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppTheme.textDark)),
+                      const SizedBox(height: 2),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: _statusColor(status).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(_statusLabel(status),
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _statusColor(status))),
                       ),
-                      child: Text(_statusLabel(status),
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _statusColor(status))),
-                    ),
+                      if (isQuoteSent) ...[
+                        const SizedBox(height: 4),
+                        const Text('Toca para ver la cotizacion',
+                            style: TextStyle(fontSize: 10, color: Color(0xFF8E44AD), fontWeight: FontWeight.w500)),
+                      ],
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (order['total_quote_usd'] != null)
+                      Text('\$${order['total_quote_usd']}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textDark)),
+                    const Icon(Icons.chevron_right_rounded, color: AppTheme.textLight, size: 20),
                   ],
                 ),
-              ),
-              if (order['total_quote_usd'] != null)
-                Text('\$${order['total_quote_usd']}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textDark)),
-            ],
+              ],
+            ),
           ),
         );
       }).toList(),
