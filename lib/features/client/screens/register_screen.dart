@@ -39,26 +39,46 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() { _isLoading = true; _errorMessage = null; });
 
     try {
+      // Verificar si el correo ya existe
+      final emailExists = await supabase.rpc(
+        'check_email_exists',
+        params: {'p_email': _emailController.text.trim()},
+      );
+
+      if (emailExists == true) {
+        setState(() {
+          _errorMessage = 'Este correo ya tiene una cuenta registrada.';
+          _isLoading = false;
+        });
+        return;
+      }
+
       final response = await supabase.auth.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text,
+        emailRedirectTo: 'fatherson://login',
+        data: {
+          'full_name': _nameController.text.trim(),
+          'phone_number': _phoneController.text.trim(),
+        },
       );
 
       if (response.user == null) throw Exception('No se pudo crear la cuenta');
 
-      await supabase.from('clients').insert({
-        'app_user_id': response.user!.id,
-        'full_name': _nameController.text.trim(),
-        'email': _emailController.text.trim(),
-        'phone_number': _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
-        'preferred_channel': 'app',
-      });
-
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cuenta creada exitosamente'), backgroundColor: AppTheme.accent),
-        );
-        Navigator.pushReplacementNamed(context, AppRouter.clientHome);
+        if (response.session == null) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Revisa tu correo para confirmar tu cuenta'),
+              backgroundColor: AppTheme.accent,
+              duration: Duration(seconds: 5),
+            ),
+          );
+          Navigator.pushReplacementNamed(context, AppRouter.login);
+        } else {
+          Navigator.pushReplacementNamed(context, AppRouter.clientHome);
+        }
       }
     } catch (e) {
       setState(() {
